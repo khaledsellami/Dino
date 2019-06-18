@@ -18,6 +18,7 @@ class Dino:
         self.JUMP_SPEED_D = 0.5 
         self.DINO_MOVE_SPEED = 0.1
         self.GROUND_INITIAL_SPEED = 6
+        self.COLLISION_FORGIVE = 10    
         #Initialize flags.
         self.running = True
         self.playing = False
@@ -101,21 +102,20 @@ class Dino:
         self.running = True
      
     def reinit(self):
+        """Reinitialize the flags and variables"""
         self.dino_y = self.DINO_INITIAL_Y
-        self.dino_x = self.DINO_INITIAL_X
-        
+        self.dino_x = self.DINO_INITIAL_X          
+        self.obstacles = list()
+        self.obstacle_distance = 0       
+        self.move_counter = 0
+        self.game_time = 0
+        self.ground_move = 0      
         self.playing = True
         self.jumping_a = False
         self.jumping_d = False   
         
-        self.obstacles = list()
-        self.obstacle_distance = 0
-        
-        self.move_counter = 0
-        self.game_time = 0
-        self.ground_move = 0
-        
     def on_event(self, event):
+        """Detect events and change flags accordingly"""
         if event.type == pygame.QUIT:
             self.running = False
         if event.type == pygame.KEYDOWN:
@@ -126,10 +126,11 @@ class Dino:
                 self.reinit()
         
     def on_loop(self):
+        """Update variables and move objects"""
         if self.playing:
             dt = self.clock.tick(60)
-            self.game_time += dt
-            
+            self.game_time += dt     
+            #Update dinosaur location if jumping
             if self.jumping_a:
                 if self.dino_y <= (self.DINO_INITIAL_Y-self.MAX_JUMP_HEIGHT):
                     self.jumping_a = False
@@ -147,12 +148,12 @@ class Dino:
                                      - self.MAX_JUMP_HEIGHT/1.5):
                     self.dino_y += self.JUMP_SPEED_D*dt/2
                 else:
-                    self.dino_y += self.JUMP_SPEED_D*dt
-                    
+                    self.dino_y += self.JUMP_SPEED_D*dt  
+            #Update dinosaur movement animaton                  
             self.move_counter += self.DINO_MOVE_SPEED
             if self.move_counter >= 10:
-                self.move_counter = 0
-            
+                self.move_counter = 0    
+            #Update ground location        
             self.ground_step = (
                     self.GROUND_INITIAL_SPEED
                     * ( 0.125*(self.game_time//10000) + 1)
@@ -164,8 +165,8 @@ class Dino:
                     self.ground_parts[int(self.ground_step):] 
                     + self.ground_parts[:int(self.ground_step)]
                     )
+            #Generate obstacles and update their location
             self.obstacle_distance += int(self.ground_step)
-            
             if 300 < self.obstacle_distance <= 900:
                 gen_num = random.uniform(0,1)
                 if gen_num < 0.05 :
@@ -189,7 +190,6 @@ class Dino:
                             ])
                     last_x += chosen_obstacle.get_width()
                 self.obstacle_distance = 0
-            
             obstacles=list()
             for obstacle in self.obstacles:
                 obstacle[1][0] -= int(self.ground_step)
@@ -198,15 +198,15 @@ class Dino:
             self.obstacles = obstacles
                                         
     def on_render(self):
-        rect_adjust = 10
-        
-        self.display_surf.fill((255,255,255))
-        
+        """Clear screen and repaint objects with updated data"""
+        #Clear screen
+        self.display_surf.fill((255,255,255))        
+        #Paint ground
         ground_x=0
         for ground in self.ground_parts:
             self.display_surf.blit(ground, (ground_x,self.DINO_INITIAL_Y+35))
             ground_x += ground.get_width()
-        
+        #Paint instruction text
         score = self.text_font.render(
                 str(int(self.game_time/100)), 
                 False, 
@@ -239,7 +239,7 @@ class Dino:
                     (self.display_surf.get_width()//2 
                      - self.instuction_up.get_width()//2,25)
                     )
-        
+        #Paint Dinosaur
         if self.playing:
             if self.jumping_a or self.jumping_d:
                 dino_rect = self.display_surf.blit(
@@ -268,16 +268,14 @@ class Dino:
                 dino_rect = self.display_surf.blit(
                         self.dino_dead, 
                         (self.dino_x,self.dino_y)
-                        )
-        
-        
+                        )                
         dino_rect = pygame.Rect(
-                dino_rect.left + rect_adjust,
-                dino_rect.top + rect_adjust,
-                dino_rect.width - rect_adjust,
-                dino_rect.height - rect_adjust
+                dino_rect.left + self.COLLISION_FORGIVE,
+                dino_rect.top + self.COLLISION_FORGIVE,
+                dino_rect.width - self.COLLISION_FORGIVE,
+                dino_rect.height - self.COLLISION_FORGIVE
                 )
-        
+        #Paint obstacles
         obstacle_rects = list()
         closest_obstacle = 0
         for obstacle in self.obstacles:
@@ -287,10 +285,10 @@ class Dino:
                         (obstacle[1][0], obstacle[1][1])
                         )
                 obstacle_rect = pygame.Rect(
-                        obstacle_rect.left + rect_adjust,
-                        obstacle_rect.top + rect_adjust,
-                        obstacle_rect.width - rect_adjust,
-                        obstacle_rect.height - rect_adjust
+                        obstacle_rect.left + self.COLLISION_FORGIVE,
+                        obstacle_rect.top + self.COLLISION_FORGIVE,
+                        obstacle_rect.width - self.COLLISION_FORGIVE,
+                        obstacle_rect.height - self.COLLISION_FORGIVE
                         )
                 if closest_obstacle == 0:
                     if dino_rect.left <= (obstacle_rect.left
@@ -309,20 +307,22 @@ class Dino:
                         obstacle[0],
                         (obstacle[1][0],obstacle[1][1])
                         )
-                
+        #Detect collision        
         for obstacle_rect in obstacle_rects:
             if dino_rect.colliderect(obstacle_rect):
                 self.playing = False
                 break
+        #Update screen
         pygame.display.flip()
         
     def on_cleanup(self):
+        """Close game"""
         pygame.quit()
  
     def on_execute(self):
+        """Execute game loop"""
         if self.on_init() == False:
-            self.running = False
- 
+            self.running = False 
         while( self.running ):
             for event in pygame.event.get():
                 self.on_event(event)
