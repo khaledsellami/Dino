@@ -16,10 +16,11 @@ To try out the script, simply run the command :
     python dino_game.py 
 
 Optional arguments:
-    - type ( or m ) : type of the player which can be either human, random or neat (default human)
-    if type is neat
-        - population ( or p ) : number of genomes in a population (default 100).
-        - generations ( or g ) : number of generation to train (default 50).
+  - type ( or t ) : type of the player which can be either human, random or neat (default human).
+  - If type is neat :
+    - population ( or p ) : number of genomes in a population (default 100).
+    - generations ( or g ) : number of generation to train (default 50).
+
 Example:
 
     python dino_game.py --type neat -p 50 -g 20
