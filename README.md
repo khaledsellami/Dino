@@ -17,7 +17,7 @@ To try out the script, simply run the command :
 
 Optional arguments:
     - type ( or m ) : type of the player which can be either human, random or neat (default human)
-    if type is neat 
+    if type is neat
         - population ( or p ) : number of genomes in a population (default 100).
         - generations ( or g ) : number of generation to train (default 50).
 Example:
